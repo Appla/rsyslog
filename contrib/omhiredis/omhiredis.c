@@ -152,8 +152,12 @@ static rsRetVal initHiredis(wrkrInstanceData_t *pWrkrData, int bSilent)
 			pWrkrData->pData->port);
 	
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
-	pWrkrData->conn = redisConnectWithTimeout(server, pWrkrData->pData->port,
-			timeout);
+	// start with / and port equal zero treat as uds
+	if (server[0] == '/' && pWrkrData->pData->port == 0) {
+		pWrkrData->conn = redisConnectUnixWithTimeout(server, timeout);
+	} else {
+		pWrkrData->conn = redisConnectWithTimeout(server, pWrkrData->pData->port, timeout);
+	}
 	if (pWrkrData->conn->err) {
 		if(!bSilent)
 			LogError(0, RS_RET_SUSPENDED,
