@@ -152,12 +152,25 @@ static rsRetVal initHiredis(wrkrInstanceData_t *pWrkrData, int bSilent)
 			pWrkrData->pData->port);
 	
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
-	pWrkrData->conn = redisConnectWithTimeout(server, pWrkrData->pData->port,
+	// start with / and port equal zero treat as uds
+	if (server[0] == '/' && pWrkrData->pData->port == 0) {
+		pWrkrData->conn = redisConnectUnixWithTimeout(server, timeout);
+	} else {
+		pWrkrData->conn = redisConnectWithTimeout(server, pWrkrData->pData->port,
 			timeout);
+	}
+	if (pWrkrData->conn == NULL) {
+		if (!bSilent)
+			LogError(0, RS_RET_REDIS_ERROR, "omhiredis: can not connect to redis server '%s' : port %d"
+											"-> could not allocate context!\n",
+					 server, pWrkrData->pData->port);
+		ABORT_FINALIZE(RS_RET_SUSPENDED);
+	}
 	if (pWrkrData->conn->err) {
-		if(!bSilent)
-			LogError(0, RS_RET_SUSPENDED,
-				"can not initialize redis handle");
+		if (!bSilent)
+			LogError(0, RS_RET_REDIS_ERROR, "omhiredis: can not connect to redis server '%s', "
+											"port %d -> %s\n",
+						server, pWrkrData->pData->port, pWrkrData->conn->errstr);
 		ABORT_FINALIZE(RS_RET_SUSPENDED);
 	}
 
