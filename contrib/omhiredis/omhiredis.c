@@ -189,7 +189,7 @@ ENDdbgPrintInstInfo
 static rsRetVal initHiredis(wrkrInstanceData_t *pWrkrData, int bSilent)
 {
 	char *server;
-	uint8_t udsAddr = 0;
+	sbool udsAddr = 0;
 	redisReply *reply = NULL;
 	DEFiRet;
 	if (pWrkrData->pData->server == NULL) {
@@ -202,13 +202,14 @@ static rsRetVal initHiredis(wrkrInstanceData_t *pWrkrData, int bSilent)
 	} else {
 		server = (char *) pWrkrData->pData->server;
 	}
-	DBGPRINTF("omhiredis: trying connect to '%s' at port %d\n", server,
-			pWrkrData->pData->port);
 
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
 	if (udsAddr) {
+		DBGPRINTF("omhiredis: trying connect to UDS socket '%s'\n", server);
 		pWrkrData->conn = redisConnectUnixWithTimeout(server, timeout);
 	} else {
+		DBGPRINTF("omhiredis: trying connect to '%s' at port %d\n", server,
+				pWrkrData->pData->port);
 		pWrkrData->conn = redisConnectWithTimeout(server,pWrkrData->pData->port,
 				timeout);
 	}
